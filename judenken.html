@@ -236,6 +236,7 @@ function toggleCheck(checkbox, index) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedIndices));
   updateUI();
 }
+const SITE_URL = "https://shiro354.github.io/judenken-checker/judenken.html";
 function updateUI() {
   const checkboxes = document.querySelectorAll('input[type="checkbox"]');
   let checkedCount = 0;
@@ -244,8 +245,8 @@ function updateUI() {
   const percentage = Math.round((checkedCount / total) * 100);
   document.getElementById('progressBar').style.width = percentage + "%";
   document.getElementById('statusText').innerText = `${checkedCount} / ${total} 地区 (${percentage}%)`;
-  const text = `重伝建制覇の旅！現在、${checkedCount}/${total}地区 (${percentage}%)を達成しました！ #重伝建めぐり`;
-  const url = "https://x.com/intent/tweet?text=" + encodeURIComponent(text);
+  const tweetText = `重伝建制覇の旅！現在、${checkedCount}/${total}地区 (${percentage}%)を達成しました！ ぜひチェックしてね！ ${SITE_URL}`;
+  const url = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweetText);
   document.getElementById('tweetBtn').href = url;
 }
 renderList();
