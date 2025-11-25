@@ -245,7 +245,7 @@ function updateUI() {
   const percentage = Math.round((checkedCount / total) * 100);
   document.getElementById('progressBar').style.width = percentage + "%";
   document.getElementById('statusText').innerText = `${checkedCount} / ${total} 地区 (${percentage}%)`;
-  const tweetText = `重伝建制覇の旅！現在、${checkedCount}/${total}地区 (${percentage}%)を達成しました！ ぜひチェックしてね！ ${SITE_URL}`;
+  const tweetText = `重伝建制覇の旅！現在、${checkedCount}/${total}地区 (${percentage}%)を達成しました！ ぜひチェックしてね！ #重伝建　＃町並み #旅行　${SITE_URL}`;
   const url = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweetText);
   document.getElementById('tweetBtn').href = url;
 }
