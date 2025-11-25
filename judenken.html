@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>重伝建めぐり完全制覇チェッカー</title>
+<style>
+  body { font-family: "Helvetica Neue", Arial, sans-serif; background-color: #f4f1ea; color: #4a3b32; margin: 0; padding: 20px; padding-bottom: 80px; }
+  h1 { text-align: center; font-size: 22px; color: #8b4513; margin-bottom: 5px; }
+  .subtitle { text-align: center; font-size: 13px; margin-bottom: 20px; color: #666; }
+  .progress-container { position: sticky; top: 0; background: #f4f1ea; padding: 10px 0 15px 0; z-index: 100; border-bottom: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+  .progress-bar-bg { background-color: #e0e0e0; border-radius: 10px; height: 18px; width: 100%; overflow: hidden; margin-bottom: 5px; }
+  .progress-bar { background-color: #d2691e; height: 100%; width: 0%; transition: width 0.3s ease-out; }
+  .status-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: bold; }
+  .tweet-btn { background-color: #000; color: white; padding: 5px 12px; border-radius: 20px; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; }
+  .tweet-btn:hover { opacity: 0.8; }
+  .tweet-icon { margin-right: 5px; font-style: normal; }
+  .region-title { font-size: 16px; margin-top: 25px; border-left: 5px solid #8b4513; padding-left: 10px; background: #e6dccf; padding: 5px 10px; color: #3e2b20; font-weight: bold; }
+  .district-list { list-style: none; padding: 0; margin: 0; }
+  .district-item { background: white; margin-bottom: 8px; padding: 12px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; align-items: flex-start; cursor: pointer; transition: background 0.1s; }
+  .district-item:active { background-color: #f0e8df; }
+  .check-area { margin-right: 12px; display: flex; align-items: center; height: 100%; padding-top: 2px; }
+  .district-item input { transform: scale(1.6); cursor: pointer; accent-color: #d2691e; }
+  .district-info { flex-grow: 1; }
+  .pref-name { font-size: 11px; color: #888; display: block; margin-bottom: 2px; }
+  .district-name { font-size: 15px; font-weight: bold; line-height: 1.4; display: block; }
+  .type-badge { font-size: 11px; color: #d2691e; background: #fff0e0; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; border: 1px solid #f0d0b0; }
+  .district-item.checked { background-color: #f9f9f9; }
+  .district-item.checked .district-name { color: #aaa; text-decoration: line-through; }
+  .district-item.checked .type-badge { opacity: 0.5; }
+</style>
+</head>
+<body>
+  <h1>🏯 重伝建めぐり完全制覇</h1>
+  <div class="subtitle">重要伝統的建造物群保存地区 チェックシート</div>
+  <div class="progress-container">
+    <div class="progress-bar-bg">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="status-row">
+      <span id="statusText">0 / 129 (0%)</span>
+      <a href="#" class="tweet-btn" id="tweetBtn" target="_blank"><span class="tweet-icon">𝕏</span>共有する</a>
+    </div>
+  </div>
+  <div id="listContainer"></div>
+<script>
+// 文化庁リストに基づく全データ (2024-2025時点 129地区)
+const districts = [
+  // 北海道・東北 (9地区)
+  { region: "北海道・東北", pref: "北海道", name: "函館市元町末広町", type: "港町" },
+  { region: "北海道・東北", pref: "青森県", name: "弘前市仲町", type: "武家町" },
+  { region: "北海道・東北", pref: "青森県", name: "黒石市中町", type: "商家町" },
+  { region: "北海道・東北", pref: "岩手県", name: "金ケ崎町城内諏訪小路", type: "武家町" },
+  { region: "北海道・東北", pref: "宮城県", name: "村田町村田", type: "商家町" },
+  { region: "北海道・東北", pref: "秋田県", name: "横手市増田", type: "在郷町" },
+  { region: "北海道・東北", pref: "秋田県", name: "仙北市角館", type: "武家町" },
+  { region: "北海道・東北", pref: "福島県", name: "下郷町大内宿", type: "宿場町" },
+  { region: "北海道・東北", pref: "福島県", name: "南会津町前沢", type: "山村集落" },
+  
+  // 関東 (6地区)
+  { region: "関東", pref: "茨城県", name: "桜川市真壁", type: "在郷町" },
+  { region: "関東", pref: "栃木県", name: "栃木市嘉右衛門町", type: "在郷町" },
+  { region: "関東", pref: "群馬県", name: "中之条町六合赤岩", type: "山村養蚕集落" },
+  { region: "関東", pref: "群馬県", name: "桐生市桐生新町", type: "製織町" },
+  { region: "関東", pref: "埼玉県", name: "川越市川越", type: "商家町" },
+  { region: "関東", pref: "千葉県", name: "香取市佐原", type: "商家町" },
+  
+  // 甲信越・北陸 (27地区)
+  { region: "甲信越・北陸", pref: "新潟県", name: "佐渡市宿根木", type: "港町" },
+  { region: "甲信越・北陸", pref: "新潟県", name: "佐渡市小木町", type: "港町" }, 
+  { region: "甲信越・北陸", pref: "富山県", name: "高岡市山町筋", type: "商家町" },
+  { region: "甲信越・北陸", pref: "富山県", name: "高岡市金屋町", type: "鋳物師町" },
+  { region: "甲信越・北陸", pref: "富山県", name: "高岡市吉久", type: "商家町" }, 
+  { region: "甲信越・北陸", pref: "富山県", name: "南砺市相倉", type: "山村集落" },
+  { region: "甲信越・北陸", pref: "富山県", name: "南砺市菅沼", type: "山村集落" },
+  { region: "甲信越・北陸", pref: "石川県", name: "金沢市東山ひがし", type: "茶屋町" },
+  { region: "甲信越・北陸", pref: "石川県", name: "金沢市主計町", type: "茶屋町" },
+  { region: "甲信越・北陸", pref: "石川県", name: "金沢市卯辰山麓", type: "寺町" },
+  { region: "甲信越・北陸", pref: "石川県", name: "金沢市寺町台", type: "寺町" },
+  { region: "甲信越・北陸", pref: "石川県", name: "輪島市黒島地区", type: "船主集落" },
+  { region: "甲信越・北陸", pref: "石川県", name: "加賀市加賀橋立", type: "船主集落" },
+  { region: "甲信越・北陸", pref: "石川県", name: "加賀市加賀東谷", type: "山村集落" }, 
+  { region: "甲信越・北陸", pref: "石川県", name: "白山市白峰", type: "山村養蚕集落" },
+  { region: "甲信越・北陸", pref: "福井県", name: "小浜市小浜西組", type: "茶屋町" },
+  { region: "甲信越・北陸", pref: "福井県", name: "若狭町熊川宿", type: "宿場町" },
+  { region: "甲信越・北陸", pref: "福井県", name: "南越前町今庄宿", type: "宿場町" }, 
+  { region: "甲信越・北陸", pref: "山梨県", name: "甲州市塩山下小田原上条", type: "山村集落" },
+  { region: "甲信越・北陸", pref: "山梨県", name: "早川町赤沢", type: "講中宿" },
+  { region: "甲信越・北陸", pref: "長野県", name: "長野市戸隠", type: "宿坊群・門前町" },
+  { region: "甲信越・北陸", pref: "長野県", name: "塩尻市木曽平沢", type: "漆工町" },
+  { region: "甲信越・北陸", pref: "長野県", name: "塩尻市奈良井", type: "宿場町" },
+  { region: "甲信越・北陸", pref: "長野県", name: "千曲市稲荷山", type: "商家町" },
+  { region: "甲信越・北陸", pref: "長野県", name: "東御市海野宿", type: "宿場町" },
+  { region: "甲信越・北陸", pref: "長野県", name: "南木曽町妻籠宿", type: "宿場町" },
+  { region: "甲信越・北陸", pref: "長野県", name: "白馬村青鬼", type: "山村集落" },
+  { region: "長野県", name: "須坂市須坂", type: "商家町" }, 
+  
+  // 東海 (11地区)
+  { region: "東海", pref: "岐阜県", name: "高山市三町", type: "商家町" },
+  { region: "東海", pref: "岐阜県", name: "高山市下二之町大新町", type: "商家町" },
+  { region: "東海", pref: "岐阜県", name: "美濃市美濃町", type: "商家町" },
+  { region: "東海", pref: "岐阜県", name: "恵那市岩村町本通り", type: "商家町" },
+  { region: "東海", pref: "岐阜県", name: "美濃加茂市太田宿", type: "宿場町" },
+  { region: "東海", pref: "岐阜県", name: "郡上市郡上八幡北町", type: "城下町" },
+  { region: "東海", pref: "岐阜県", name: "白川村荻町", type: "山村集落" },
+  { region: "東海", pref: "愛知県", name: "名古屋市有松", type: "染織町" },
+  { region: "東海", pref: "愛知県", name: "豊田市足助", type: "在郷町" },
+  { region: "東海", pref: "愛知県", name: "焼津市花沢", type: "漁村集落" }, 
+  { region: "東海", pref: "三重県", name: "亀山市関宿", type: "宿場町" },
+  
+  // 近畿 (22地区)
+  { region: "近畿", pref: "滋賀県", name: "大津市坂本", type: "里坊群" },
+  { region: "近畿", pref: "滋賀県", name: "近江八幡市八幡", type: "商家町" },
+  { region: "近畿", pref: "滋賀県", name: "東近江市五個荘金堂", type: "農村集落" },
+  { region: "近畿", pref: "滋賀県", name: "彦根市河原町芹町地区", type: "商家町" }, 
+  { region: "近畿", pref: "京都府", name: "京都市上賀茂", type: "社家町" },
+  { region: "近畿", pref: "京都市", name: "京都市産寧坂", type: "門前町" },
+  { region: "近畿", pref: "京都市", name: "京都市祇園新橋", type: "茶屋町" },
+  { region: "近畿", pref: "京都市", name: "京都市嵯峨鳥居本", type: "門前町" },
+  { region: "近畿", pref: "京都府", name: "伊根町伊根浦", type: "漁村" },
+  { region: "近畿", pref: "京都府", name: "与謝野町加悦", type: "製織町" },
+  { region: "近畿", pref: "京都府", name: "南丹市美山町北", type: "山村集落" },
+  { region: "近畿", pref: "大阪府", name: "富田林市富田林", type: "寺内町" },
+  { region: "近畿", pref: "兵庫県", name: "神戸市北野町山本通", type: "港町" },
+  { region: "近畿", pref: "兵庫県", name: "豊岡市出石", type: "城下町" },
+  { region: "近畿", pref: "兵庫県", name: "丹波篠山市篠山", type: "城下町" },
+  { region: "近畿", pref: "兵庫県", name: "丹波篠山市福住", type: "宿場町・農村集落" },
+  { region: "近畿", pref: "兵庫県", name: "養父市大屋町大杉", type: "山村養蚕集落" },
+  { region: "近畿", pref: "兵庫県", name: "たつの市龍野", type: "城下町" }, 
+  { region: "近畿", pref: "奈良県", name: "橿原市今井町", type: "寺内町" },
+  { region: "近畿", pref: "奈良県", name: "五條市五條新町", type: "商家町" },
+  { region: "近畿", pref: "奈良県", name: "宇陀市松山", type: "商家町" },
+  { region: "近畿", pref: "和歌山県", name: "湯浅町湯浅", type: "醸造町" },
+  
+  // 中国 (20地区)
+  { region: "中国", pref: "鳥取県", name: "倉吉市打吹玉川", type: "商家町" },
+  { region: "中国", pref: "鳥取県", name: "若桜町若桜鬼ヶ城下町", type: "商家町" },
+  { region: "中国", pref: "鳥取県", name: "大山町所子", type: "農村集落" },
+  { region: "中国", pref: "鳥取県", name: "智頭町板井原", type: "山村集落" }, 
+  { region: "中国", pref: "島根県", name: "大田市温泉津", type: "温泉町" },
+  { region: "中国", pref: "島根県", name: "大田市大森銀山", type: "鉱山町" },
+  { region: "中国", pref: "島根県", name: "津和野町津和野", type: "武家町・商家町" },
+  { region: "中国", pref: "岡山県", name: "倉敷市倉敷川畔", type: "商家町" },
+  { region: "中国", pref: "岡山県", name: "津山市城東", type: "商家町" },
+  { region: "中国", pref: "岡山県", name: "津山市城西", type: "寺町" },
+  { region: "中国", pref: "岡山県", name: "高梁市吹屋", type: "鉱山町" },
+  { region: "中国", pref: "岡山県", name: "矢掛町矢掛宿", type: "宿場町" },
+  { region: "中国", pref: "広島県", name: "広島市廿日市市宮島町", type: "門前町" },
+  { region: "中国", pref: "広島県", name: "竹原市竹原地区", type: "製塩町" },
+  { region: "中国", pref: "広島県", name: "福山市鞆町", type: "港町" },
+  { region: "中国", pref: "広島県", name: "呉市豊町御手洗", type: "港町" },
+  { region: "中国", pref: "山口県", name: "萩市堀内地区", type: "武家町" },
+  { region: "中国", pref: "山口県", name: "萩市平安古地区", type: "武家町" },
+  { region: "中国", pref: "山口県", name: "萩市浜崎", type: "港町" },
+  { region: "中国", pref: "山口県", name: "萩市佐々並市", type: "宿場町" },
+  { region: "中国", pref: "山口県", name: "柳井市古市金屋", type: "商家町" },
+  
+  // 四国 (10地区)
+  { region: "四国", pref: "徳島県", name: "美馬市脇町南町", type: "商家町" },
+  { region: "四国", pref: "徳島県", name: "三好市東祖谷落合", type: "山村集落" },
+  { region: "四国", pref: "徳島県", name: "牟岐町出羽島", type: "漁村" },
+  { region: "四国", pref: "香川県", name: "丸亀市塩飽本島町笠島", type: "港町" },
+  { region: "四国", pref: "香川県", name: "丸亀市本島町泊", type: "港町" }, 
+  { region: "四国", pref: "愛媛県", name: "西予市宇和町卯之町", type: "在郷町" },
+  { region: "四国", pref: "愛媛県", name: "内子町八日市護国", type: "製蝋町" },
+  { region: "四国", pref: "愛媛県", name: "宇和島市津島町岩松", type: "在郷町" }, 
+  { region: "四国", pref: "高知県", name: "室戸市吉良川町", type: "在郷町" },
+  { region: "四国", pref: "高知県", name: "安芸市土居廓中", type: "武家町" },
+  
+  // 九州・沖縄 (27地区)
+  { region: "九州・沖縄", pref: "福岡県", name: "朝倉市秋月", type: "城下町" },
+  { region: "九州・沖縄", pref: "福岡県", name: "八女市八女福島", type: "商家町" },
+  { region: "九州・沖縄", pref: "福岡県", name: "八女市黒木", type: "在郷町" },
+  { region: "九州・沖縄", pref: "福岡県", name: "うきは市筑後吉井", type: "在郷町" },
+  { region: "九州・沖縄", pref: "福岡県", name: "うきは市新川田篭", type: "山村集落" }, 
+  { region: "九州・沖縄", pref: "福岡県", name: "北九州市木屋瀬", type: "宿場町" }, 
+  { region: "九州・沖縄", pref: "佐賀県", name: "鹿島市浜中町八本木宿", type: "醸造町" },
+  { region: "九州・沖縄", pref: "佐賀県", name: "鹿島市浜庄津町浜金屋町", type: "港町" },
+  { region: "九州・沖縄", pref: "佐賀県", name: "嬉野市塩田津", type: "商家町" },
+  { region: "九州・沖縄", pref: "佐賀県", name: "有田町有田内山", type: "製磁町" },
+  { region: "九州・沖縄", pref: "長崎県", name: "長崎市東山手", type: "洋風住宅群" },
+  { region: "九州・沖縄", pref: "長崎県", name: "長崎市南山手", type: "洋風住宅群" },
+  { region: "九州・沖縄", pref: "長崎県", name: "平戸市大島村神浦", type: "港町" },
+  { region: "九州・沖縄", pref: "長崎県", name: "雲仙市国見町神代小路", type: "武家町" },
+  { region: "九州・沖縄", pref: "大分県", name: "日田市豆田町", type: "商家町" },
+  { region: "九州・沖縄", pref: "大分県", name: "杵築市北台南台", type: "武家町" },
+  { region: "九州・沖縄", pref: "宮崎県", name: "日向市美々津", type: "港町" },
+  { region: "九州・沖縄", pref: "宮崎県", name: "日南市飫肥", type: "武家町" },
+  { region: "九州・沖縄", pref: "宮崎県", name: "椎葉村十根川", type: "山村集落" },
+  { region: "九州・沖縄", pref: "鹿児島県", name: "薩摩川内市入来麓", type: "武家町" },
+  { region: "九州・沖縄", pref: "鹿児島県", name: "出水市出水麓", type: "武家町" },
+  { region: "九州・沖縄", pref: "鹿児島県", name: "南九州市知覧", type: "武家町" },
+  { region: "鹿児島県", name: "南さつま市加世田麓", type: "武家町" }, 
+  { region: "九州・沖縄", pref: "沖縄県", name: "渡名喜村渡名喜島", type: "集落" },
+  { region: "九州・沖縄", pref: "沖縄県", name: "竹富町竹富島", type: "集落" }
+];
+const STORAGE_KEY = 'judenken_progress_full_129'; 
+function renderList() {
+  const container = document.getElementById('listContainer');
+  let currentRegion = "";
+  const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  districts.forEach((d, index) => {
+    if (d.region !== currentRegion) {
+      const h2 = document.createElement('div');
+      h2.className = 'region-title';
+      h2.innerText = d.region;
+      container.appendChild(h2);
+      currentRegion = d.region;
+    }
+    const item = document.createElement('label');
+    item.className = 'district-item';
+    if (savedData.includes(index)) item.classList.add('checked');
+    item.innerHTML = `
+      <div class="check-area">
+        <input type="checkbox" onchange="toggleCheck(this, ${index})" ${savedData.includes(index) ? 'checked' : ''}>
+      </div>
+      <div class="district-info">
+        <span class="pref-name">${d.pref}</span>
+        <span class="district-name">${d.name}</span>
+        <span class="type-badge">${d.type}</span>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+  updateUI();
+}
+function toggleCheck(checkbox, index) {
+  const parent = checkbox.closest('.district-item');
+  if (checkbox.checked) {
+    parent.classList.add('checked');
+  } else {
+    parent.classList.remove('checked');
+  }
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+  const checkedIndices = [];
+  checkboxes.forEach((box, idx) => {
+    if (box.checked) checkedIndices.push(idx);
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedIndices));
+  updateUI();
+}
+function updateUI() {
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+  let checkedCount = 0;
+  checkboxes.forEach(box => { if(box.checked) checkedCount++; });
+  const total = districts.length;
+  const percentage = Math.round((checkedCount / total) * 100);
+  document.getElementById('progressBar').style.width = percentage + "%";
+  document.getElementById('statusText').innerText = `${checkedCount} / ${total} 地区 (${percentage}%)`;
+  const text = `重伝建制覇の旅！現在、${checkedCount}/${total}地区 (${percentage}%)を達成しました！ #重伝建めぐり`;
+  const url = "https://x.com/intent/tweet?text=" + encodeURIComponent(text);
+  document.getElementById('tweetBtn').href = url;
+}
+renderList();
+</script>
+</body>
+</html>
