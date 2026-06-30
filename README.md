@@ -64,7 +64,7 @@ Open judenken.html in your browser.
 
 On macOS, you can run:
 
-open judenken.html
+open index.html
 
 On Windows, you can open the file by double-clicking judenken.html in File Explorer.
 
@@ -72,7 +72,7 @@ File Structure
 
 judenken-checker/
 ├── README.md
-└── judenken.html
+└── index.html
 
 Notes
 
