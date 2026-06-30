@@ -99,3 +99,10 @@ License
 No license has been specified yet.
 
 If you want others to use, modify, or redistribute this project, consider adding a LICENSE file.
+
+## Privacy
+
+This site uses privacy-friendly analytics with GoatCounter to understand overall usage trends.
+
+Your checklist data is stored only in your browser using localStorage.  
+It is not collected, transmitted, or shared with the site owner.
