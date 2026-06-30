@@ -66,7 +66,7 @@ On macOS, you can run:
 
 open index.html
 
-On Windows, you can open the file by double-clicking judenken.html in File Explorer.
+On Windows, you can open the file by double-clicking index.html in File Explorer.
 
 File Structure
 
