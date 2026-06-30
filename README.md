@@ -9,7 +9,7 @@ The checked status is saved in your browser’s local storage, so your progress 
 
 Live Demo
 
-https://shiro354.github.io/judenken-checker/judenken.html
+https://shiro354.github.io/judenken-checker/
 
 Features
 
